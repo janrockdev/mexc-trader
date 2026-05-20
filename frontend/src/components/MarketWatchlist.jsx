@@ -3,7 +3,12 @@ import { useMemo, useState, useRef, useCallback } from 'react';
 function fmt(v, d = 4) {
   const n = +v;
   if (isNaN(n)) return '—';
-  if (n >= 1000) return n.toLocaleString('en-US', { maximumFractionDigits: 2 });
+  if (n >= 1000) {
+    return n.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
   return n.toFixed(d);
 }
 

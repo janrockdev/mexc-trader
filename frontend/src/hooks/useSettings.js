@@ -44,14 +44,15 @@ function save(settings) {
 }
 
 /**
- * @returns {[settings: object, set: (key: string, value: any) => void]}
+ * @returns {[settings: object, set: (key: string, value: any | ((prevValue: any, prevSettings: object) => any)) => void]}
  */
 export function useSettings() {
   const [settings, setSettings] = useState(load);
 
   const set = useCallback((key, value) => {
     setSettings((prev) => {
-      const next = { ...prev, [key]: value };
+      const resolved = typeof value === 'function' ? value(prev[key], prev) : value;
+      const next = { ...prev, [key]: resolved };
       save(next);
       return next;
     });

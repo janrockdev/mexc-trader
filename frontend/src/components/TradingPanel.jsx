@@ -17,26 +17,54 @@ function fmtPrice(p) {
   return n.toFixed(6);
 }
 
-export default function TradingPanel({ symbol, ticker }) {
+export default function TradingPanel({ symbol, ticker, onOpenTrade }) {
   const [side, setSide]       = useState('buy');
   const [orderType, setType]  = useState('market');
   const [price, setPrice]     = useState('');
   const [qty, setQty]         = useState('');
+  const [leverage, setLeverage] = useState(5);
   const [submitted, setSubmit] = useState(null);
+  const [submitError, setSubmitError] = useState('');
 
   const lastPrice = +(ticker?.lastPrice ?? ticker?.c ?? 0);
+  const openPrice = +(ticker?.openPrice ?? ticker?.o ?? 0);
+  // Keep pct logic consistent with watchlist: derive from last/open whenever possible.
+  const pctChange = openPrice > 0
+    ? ((lastPrice - openPrice) / openPrice) * 100
+    : +(ticker?.priceChangePercent ?? ticker?.P ?? 0);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    const qtyNum = +qty;
+    if (!Number.isFinite(qtyNum) || qtyNum <= 0) {
+      setSubmitError('Enter a valid quantity.');
+      return;
+    }
+
+    const isPxRequired = orderType === 'limit' || orderType === 'stop';
+    const marketFallbackPx = +(ticker?.openPrice ?? ticker?.o ?? 0);
+    const rawPrice = isPxRequired ? +price : (lastPrice > 0 ? lastPrice : marketFallbackPx);
+    if (isPxRequired && (!Number.isFinite(rawPrice) || rawPrice <= 0)) {
+      setSubmitError('Enter a valid price for this order type.');
+      return;
+    }
+    const execPrice = Number.isFinite(rawPrice) && rawPrice > 0 ? rawPrice : 0;
+
     const order = {
       symbol,
       side,
-      type: orderType,
-      price: orderType === 'limit' ? +price : null,
-      qty:   +qty,
+      orderType,
+      price: execPrice,
+      qty:   qtyNum,
+      leverage,
       ts:    Date.now(),
     };
-    // In demo mode, just display the order (no live execution)
+    const opened = await onOpenTrade?.(order);
+    if (opened === false) {
+      setSubmitError('Trade rejected by exchange/API. Check futures order permissions and parameters.');
+      return;
+    }
+    setSubmitError('');
     setSubmit(order);
     setQty('');
     setPrice('');
@@ -64,11 +92,11 @@ export default function TradingPanel({ symbol, ticker }) {
               style={{
                 fontSize: 11,
                 marginLeft: 8,
-                color: +(ticker.priceChangePercent ?? 0) >= 0 ? '#00e676' : '#ff3d57',
+                color: pctChange >= 0 ? '#00e676' : '#ff3d57',
               }}
             >
-              {+(ticker.priceChangePercent ?? 0) >= 0 ? '▲' : '▼'}
-              {Math.abs(+(ticker.priceChangePercent ?? 0)).toFixed(2)}%
+              {pctChange >= 0 ? '▲' : '▼'}
+              {Math.abs(pctChange).toFixed(2)}%
             </span>
           </div>
         )}
@@ -109,6 +137,19 @@ export default function TradingPanel({ symbol, ticker }) {
 
         {/* Form */}
         <form onSubmit={handleSubmit} style={styles.form}>
+          <div style={styles.field}>
+            <label style={styles.fieldLabel}>LEVERAGE</label>
+            <select
+              className="terminal-input"
+              value={leverage}
+              onChange={(e) => setLeverage(+e.target.value)}
+            >
+              {[1, 2, 3, 5, 10, 20].map((lv) => (
+                <option key={lv} value={lv}>{lv}x</option>
+              ))}
+            </select>
+          </div>
+
           {orderType === 'limit' && (
             <div style={styles.field}>
               <label style={styles.fieldLabel}>PRICE (USDT)</label>
@@ -184,19 +225,24 @@ export default function TradingPanel({ symbol, ticker }) {
             className={`btn ${side === 'buy' ? 'btn-buy' : 'btn-sell'}`}
             style={{ width: '100%', marginTop: 6, fontSize: 12, padding: '7px 0' }}
           >
-            {side === 'buy' ? '▲ PLACE BUY ORDER' : '▼ PLACE SELL ORDER'}
+            {side === 'buy' ? '▲ OPEN BUY TRADE' : '▼ OPEN SELL TRADE'}
           </button>
         </form>
 
         {/* Submission confirmation */}
+        {submitError && (
+          <div style={styles.errorBox}>{submitError}</div>
+        )}
+
         {submitted && (
           <div style={styles.confirmation}>
             <div style={{ color: '#ffeb3b', fontWeight: 700, fontSize: 11, marginBottom: 4 }}>
-              ✓ ORDER SUBMITTED (DEMO)
+              ✓ TRADE OPENED (DEMO)
             </div>
             <StatRow label="SYMBOL"    value={submitted.symbol} />
             <StatRow label="SIDE"      value={submitted.side.toUpperCase()} valueColor={submitted.side === 'buy' ? '#00e676' : '#ff3d57'} />
-            <StatRow label="TYPE"      value={submitted.type.toUpperCase()} />
+            <StatRow label="TYPE"      value={submitted.orderType.toUpperCase()} />
+            <StatRow label="LEV"       value={`${submitted.leverage}x`} />
             {submitted.price && <StatRow label="PRICE"   value={fmtPrice(submitted.price)} />}
             <StatRow label="QTY"       value={submitted.qty} />
           </div>
@@ -284,6 +330,14 @@ const styles = {
     background: 'rgba(0,230,118,0.05)',
     border: '1px solid rgba(0,230,118,0.2)',
     padding: '6px 8px',
+    marginTop: 4,
+  },
+  errorBox: {
+    background: 'rgba(255,61,87,0.08)',
+    border: '1px solid rgba(255,61,87,0.25)',
+    color: '#ff6f7f',
+    fontSize: 10,
+    padding: '5px 8px',
     marginTop: 4,
   },
   statRow: {

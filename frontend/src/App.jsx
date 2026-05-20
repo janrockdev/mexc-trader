@@ -9,6 +9,7 @@ import { useWebSocket } from './hooks/useWebSocket.js';
 import { useMarketData } from './hooks/useMarketData.js';
 import { useSettings }  from './hooks/useSettings.js';
 import Portfolio        from './components/Portfolio.jsx';
+import AccountStatus   from './components/AccountStatus.jsx';
 
 export default function App() {
   const [settings, setSetting] = useSettings();
@@ -63,6 +64,80 @@ export default function App() {
       .catch(console.error);
   }, [symbol, handleStreamMessage]);
 
+  const handleOpenTrade = useCallback(async (order) => {
+    const px = Number(order.price);
+    const activeTickerPx = +(ticker?.lastPrice ?? ticker?.c ?? ticker?.openPrice ?? ticker?.o ?? 0);
+    const anyTicker = tickers.find((t) => (t.s ?? t.symbol) === order?.symbol);
+    const anyTickerPx = +(anyTicker?.c ?? anyTicker?.lastPrice ?? anyTicker?.o ?? anyTicker?.openPrice ?? 0);
+    const tickerPx = activeTickerPx > 0 ? activeTickerPx : anyTickerPx;
+    const effectivePx = Number.isFinite(px) && px > 0 ? px : tickerPx;
+    const qty = Number(order.qty);
+    if (!order?.symbol || !Number.isFinite(effectivePx) || effectivePx <= 0 || !Number.isFinite(qty) || qty <= 0) return false;
+
+    try {
+      const resp = await fetch('/api/market/futures-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          symbol: order.symbol,
+          side: order.side,
+          orderType: order.orderType,
+          qty,
+          price: effectivePx,
+          leverage: Number(order.leverage) || 5,
+          openType: 2,
+        }),
+      });
+      const data = await resp.json();
+      if (!resp.ok || data?.error || data?.success === false) {
+        console.error('[trade] futures order rejected:', data?.error || data?.message || data);
+        return false;
+      }
+    } catch (err) {
+      console.error('[trade] futures order failed:', err);
+      return false;
+    }
+
+    const signedQty = order.side === 'sell' ? -qty : qty;
+
+    setSetting('portfolio', (prevPortfolio) => {
+      const list = Array.isArray(prevPortfolio) ? [...prevPortfolio] : [];
+      const idx = list.findIndex((p) => p.symbol === order.symbol);
+
+      if (idx < 0) {
+        return [...list, { symbol: order.symbol, qty: signedQty, avgPrice: effectivePx }];
+      }
+
+      const cur = list[idx];
+      const newQty = cur.qty + signedQty;
+
+      // Position fully closed
+      if (Math.abs(newQty) < 1e-12) {
+        list.splice(idx, 1);
+        return list;
+      }
+
+      // Same direction add -> weighted average update
+      if ((cur.qty >= 0 && signedQty >= 0) || (cur.qty <= 0 && signedQty <= 0)) {
+        const totalAbs = Math.abs(cur.qty) + Math.abs(signedQty);
+        const nextAvg = totalAbs > 0
+          ? ((Math.abs(cur.qty) * cur.avgPrice) + (Math.abs(signedQty) * effectivePx)) / totalAbs
+          : effectivePx;
+        list[idx] = { ...cur, qty: newQty, avgPrice: nextAvg };
+        return list;
+      }
+
+      // Partial close keeps prior avg; flip direction resets avg to fill price
+      if ((cur.qty > 0 && newQty > 0) || (cur.qty < 0 && newQty < 0)) {
+        list[idx] = { ...cur, qty: newQty };
+      } else {
+        list[idx] = { ...cur, qty: newQty, avgPrice: effectivePx };
+      }
+      return list;
+    });
+    return true;
+  }, [setSetting, ticker, tickers]);
+
   return (
     <div style={layout.root}>
       {/* ── Top bar ── */}
@@ -110,7 +185,7 @@ export default function App() {
           {/* Trading Panel row */}
           <div style={layout.tradingRow}>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <TradingPanel symbol={symbol} ticker={ticker} />
+              <TradingPanel symbol={symbol} ticker={ticker} onOpenTrade={handleOpenTrade} />
             </div>
             <div style={{ flex: 1.5, minWidth: 0 }}>
               <RecentTrades trades={trades} btcPrice={btcPrice} />
@@ -129,6 +204,9 @@ export default function App() {
                 send({ type: 'setDepth', symbol, depth: depthMap[tickSize] ?? 20 });
               }}
             />
+          </div>
+          <div style={{ flexShrink: 0, borderTop: '1px solid #1a1a1a' }}>
+            <AccountStatus tickers={tickers} />
           </div>
           <div style={{ flexShrink: 0, borderTop: '1px solid #1a1a1a' }}>
             <Portfolio
@@ -191,12 +269,12 @@ const layout = {
     overflow: 'hidden',
   },
   chartArea: {
-    flex: 1.6,
+    flex: 1.1,
     minHeight: 0,
     position: 'relative',
   },
   tradingRow: {
-    height: 240,
+    height: 320,
     flexShrink: 0,
     display: 'flex',
     gap: 1,
