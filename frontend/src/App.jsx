@@ -188,7 +188,18 @@ export default function App() {
               <TradingPanel symbol={symbol} ticker={ticker} onOpenTrade={handleOpenTrade} />
             </div>
             <div style={{ flex: 1.5, minWidth: 0 }}>
-              <RecentTrades trades={trades} btcPrice={btcPrice} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 1, height: '100%' }}>
+                <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', borderTop: '1px solid #1a1a1a' }}>
+                  <AccountStatus tickers={tickers} />
+                </div>
+                <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', borderTop: '1px solid #1a1a1a' }}>
+                  <Portfolio
+                    tickers={tickers}
+                    portfolio={settings.portfolio}
+                    onPortfolioChange={(p) => setSetting('portfolio', p)}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -205,15 +216,8 @@ export default function App() {
               }}
             />
           </div>
-          <div style={{ flexShrink: 0, borderTop: '1px solid #1a1a1a' }}>
-            <AccountStatus tickers={tickers} />
-          </div>
-          <div style={{ flexShrink: 0, borderTop: '1px solid #1a1a1a' }}>
-            <Portfolio
-              tickers={tickers}
-              portfolio={settings.portfolio}
-              onPortfolioChange={(p) => setSetting('portfolio', p)}
-            />
+          <div style={{ height: 320, flexShrink: 0, borderTop: '1px solid #1a1a1a', minHeight: 0 }}>
+            <RecentTrades trades={trades} btcPrice={btcPrice} />
           </div>
         </div>
       </div>
@@ -269,12 +273,12 @@ const layout = {
     overflow: 'hidden',
   },
   chartArea: {
-    flex: 1.1,
+    flex: 0.95,
     minHeight: 0,
     position: 'relative',
   },
   tradingRow: {
-    height: 320,
+    height: 350,
     flexShrink: 0,
     display: 'flex',
     gap: 1,

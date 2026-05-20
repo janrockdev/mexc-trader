@@ -1,5 +1,7 @@
 # MEXC Terminal — Bloomberg-Style Trading Dashboard
 
+![Dashboard](dashboard.png)
+
 A full-stack trading dashboard inspired by the Bloomberg Terminal aesthetic, built with:
 
 - **BFF** — Node.js / Express + WebSocket proxy for MEXC exchange data

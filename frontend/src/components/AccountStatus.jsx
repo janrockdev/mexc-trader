@@ -244,11 +244,11 @@ export default function AccountStatus({ tickers = [] }) {
 
       {/* ── Wallet block ── */}
       {!error && (
-        <div style={styles.section}>
+        <div style={styles.walletSection}>
           <div className="panel-header" style={styles.sectionHeader}>
             <span className="panel-title" style={{ fontSize: 10 }}>Wallet</span>
           </div>
-          <div style={styles.body}>
+          <div style={styles.walletBody}>
           {balances.length === 0 && !loading && (
             <div style={styles.empty}>No balances</div>
           )}
@@ -282,11 +282,11 @@ export default function AccountStatus({ tickers = [] }) {
 
       {/* ── Open Positions block ── */}
       {!error && (
-        <div style={styles.section}>
+        <div style={styles.positionsSection}>
           <div className="panel-header" style={styles.sectionHeader}>
             <span className="panel-title" style={{ fontSize: 10 }}>Open Positions</span>
           </div>
-          <div style={styles.body}>
+          <div style={styles.positionsBody}>
           {positions.length === 0 && !loading && (
             <div style={styles.empty}>No open positions</div>
           )}
@@ -379,6 +379,9 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     width: '100%',
+    height: '100%',
+    minHeight: 0,
+    overflow: 'hidden',
   },
   badge: {
     background: '#c8a94e',
@@ -406,6 +409,20 @@ const styles = {
   },
   section: {
     borderTop: '1px solid #1a1a1a',
+    display: 'flex',
+    flexDirection: 'column',
+    minHeight: 0,
+  },
+  walletSection: {
+    borderTop: '1px solid #1a1a1a',
+    flex: '0 0 auto',
+  },
+  positionsSection: {
+    borderTop: '1px solid #1a1a1a',
+    display: 'flex',
+    flexDirection: 'column',
+    minHeight: 0,
+    flex: 1,
   },
   sectionHeader: {
     padding: '3px 8px',
@@ -413,6 +430,15 @@ const styles = {
   body: {
     overflowY: 'auto',
     maxHeight: 120,
+  },
+  walletBody: {
+    overflowY: 'auto',
+    maxHeight: 96,
+  },
+  positionsBody: {
+    overflowY: 'auto',
+    minHeight: 0,
+    flex: 1,
   },
   empty: {
     fontSize: 10,
