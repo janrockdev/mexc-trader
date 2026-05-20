@@ -156,7 +156,7 @@ export default function Portfolio({ tickers = [], portfolio = [], onPortfolioCha
               </div>
               <div style={{ ...styles.cell, ...styles.numCell }}>
                 <span className="tabular" style={{ fontSize: 10, color: '#ccc' }}>
-                  {fmt(qty, qty < 1 ? 4 : 2)}
+                  {masked ? '●●●●' : fmt(qty, qty < 1 ? 4 : 2)}
                 </span>
               </div>
               <div style={{ ...styles.cell, ...styles.numCell, flex: 1.4 }}>
