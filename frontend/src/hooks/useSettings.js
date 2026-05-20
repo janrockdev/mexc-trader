@@ -7,6 +7,7 @@
  *   obTickSize  – order-book aggregation tick  (default: 0.01)
  *   tradeFilter – trade size filter in BTC     (default: null = all)
  *   watchlist   – ordered list of symbols shown in the watchlist panel
+ *   portfolio   – array of { symbol, qty, avgPrice } positions
  */
 import { useState, useCallback } from 'react';
 
@@ -23,6 +24,7 @@ const DEFAULTS = {
   obTickSize:  0.01,
   tradeFilter: null,
   watchlist:   DEFAULT_WATCHLIST,
+  portfolio:   [],
 };
 
 function load() {

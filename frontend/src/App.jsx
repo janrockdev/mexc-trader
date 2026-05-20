@@ -8,6 +8,7 @@ import TradingPanel     from './components/TradingPanel.jsx';
 import { useWebSocket } from './hooks/useWebSocket.js';
 import { useMarketData } from './hooks/useMarketData.js';
 import { useSettings }  from './hooks/useSettings.js';
+import Portfolio        from './components/Portfolio.jsx';
 
 export default function App() {
   const [settings, setSetting] = useSettings();
@@ -117,16 +118,25 @@ export default function App() {
           </div>
         </div>
 
-        {/* Right — Order Book */}
+        {/* Right — Order Book + Portfolio */}
         <div style={layout.rightCol}>
-          <OrderBook
-            orderBook={orderBook}
-            ticker={ticker}
-            onTickSizeChange={(tickSize) => {
-              const depthMap = { 0.01: 20, 0.1: 50, 1: 100, 10: 500, 100: 1000 };
-              send({ type: 'setDepth', symbol, depth: depthMap[tickSize] ?? 20 });
-            }}
-          />
+          <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+            <OrderBook
+              orderBook={orderBook}
+              ticker={ticker}
+              onTickSizeChange={(tickSize) => {
+                const depthMap = { 0.01: 20, 0.1: 50, 1: 100, 10: 500, 100: 1000 };
+                send({ type: 'setDepth', symbol, depth: depthMap[tickSize] ?? 20 });
+              }}
+            />
+          </div>
+          <div style={{ flexShrink: 0, borderTop: '1px solid #1a1a1a' }}>
+            <Portfolio
+              tickers={tickers}
+              portfolio={settings.portfolio}
+              onPortfolioChange={(p) => setSetting('portfolio', p)}
+            />
+          </div>
         </div>
       </div>
 
