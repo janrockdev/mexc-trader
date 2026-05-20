@@ -1,4 +1,5 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
+import { useSettings } from '../hooks/useSettings.js';
 
 const FILTERS = [
   { label: 'ALL', value: null },
@@ -39,7 +40,13 @@ function fmtUsd(n) {
 
 export default function RecentTrades({ trades, btcPrice }) {
   const bodyRef = useRef(null);
-  const [filterBtc, setFilterBtc] = useState(null);
+  const [settings, setSetting] = useSettings();
+  const [filterBtc, setFilterBtcRaw] = useState(settings.tradeFilter);
+
+  const setFilterBtc = useCallback((f) => {
+    setFilterBtcRaw(f);
+    setSetting('tradeFilter', f);
+  }, [setSetting]);
 
   // Auto-scroll to top when new trades arrive (newest first)
   useEffect(() => {

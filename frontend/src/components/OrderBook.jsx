@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
+import { useSettings } from '../hooks/useSettings.js';
 
 const TICK_SIZES = [0.01, 0.1, 1, 10, 100];
 
@@ -110,7 +111,13 @@ function OrderRow({ price, vol, cum, maxVol, side, tickSize, isMaxVol }) {
 
 export default function OrderBook({ orderBook, ticker, onTickSizeChange }) {
   const { bids = [], asks = [] } = orderBook;
-  const [tickSize, setTickSize] = useState(0.01);
+  const [settings, setSetting] = useSettings();
+  const [tickSize, setTickSizeRaw] = useState(settings.obTickSize);
+
+  const setTickSize = useCallback((t) => {
+    setTickSizeRaw(t);
+    setSetting('obTickSize', t);
+  }, [setSetting]);
 
   const aggBids = useMemo(() => aggregateLevels(bids, tickSize, 'bid'), [bids, tickSize]);
   const aggAsks = useMemo(() => aggregateLevels(asks, tickSize, 'ask'), [asks, tickSize]);

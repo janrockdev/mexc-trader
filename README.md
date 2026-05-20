@@ -7,7 +7,7 @@ A full-stack trading dashboard inspired by the Bloomberg Terminal aesthetic, bui
 
 ## Architecture
 
-```
+```log
 Browser ←─WS/REST─→ BFF (Node.js :3001) ←─WS/REST─→ MEXC Exchange
 ```
 
@@ -32,11 +32,13 @@ cp bff/.env.example bff/.env
 ### 3. Start both services
 
 **Terminal 1 — BFF:**
+
 ```bash
 cd bff && npm run dev
 ```
 
 **Terminal 2 — Frontend:**
+
 ```bash
 cd frontend && npm run dev
 ```
@@ -46,7 +48,7 @@ Open [http://localhost:5173](http://localhost:5173)
 ## Features
 
 | Feature | Detail |
-|---|---|
+| --- | --- |
 | Real-time order book | Level-2 depth with visual bars, bid/ask spread |
 | Candlestick chart | OHLCV with volume histogram, 7 intervals |
 | Live trade feed | Colour-coded buy/sell stream |
@@ -58,7 +60,7 @@ Open [http://localhost:5173](http://localhost:5173)
 ## MEXC WebSocket Channels
 
 | Stream | Channel |
-|---|---|
+| --- | --- |
 | Trades | `spot@public.deals.v3.api@{SYMBOL}` |
 | Order book | `spot@public.depth.v3.api@{SYMBOL}@20` |
 | Klines | `spot@public.kline.v3.api@{SYMBOL}@Min1` |

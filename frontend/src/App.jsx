@@ -7,14 +7,16 @@ import RecentTrades     from './components/RecentTrades.jsx';
 import TradingPanel     from './components/TradingPanel.jsx';
 import { useWebSocket } from './hooks/useWebSocket.js';
 import { useMarketData } from './hooks/useMarketData.js';
-
-const DEFAULT_SYMBOL   = 'BTCUSDT';
-const DEFAULT_INTERVAL = '1m';
+import { useSettings }  from './hooks/useSettings.js';
 
 export default function App() {
-  const [symbol,   setSymbol]   = useState(DEFAULT_SYMBOL);
-  const [interval, setInterval] = useState(DEFAULT_INTERVAL);
+  const [settings, setSetting] = useSettings();
+  const [symbol,   setSymbolRaw]   = useState(settings.symbol);
+  const [interval, setIntervalRaw] = useState(settings.interval);
   const prevSymbol = useRef(null);
+
+  const setSymbol   = useCallback((s) => { setSymbolRaw(s);   setSetting('symbol', s);   }, [setSetting]);
+  const setInterval = useCallback((i) => { setIntervalRaw(i); setSetting('interval', i); }, [setSetting]);
 
   const {
     orderBook,
@@ -48,7 +50,6 @@ export default function App() {
   // actual refetch: we'll do it via a dedicated small effect
   const handleIntervalChange = useCallback((iv) => {
     setInterval(iv);
-    // Fetch klines for new interval via REST
     fetch(`/api/market/klines?symbol=${symbol}&interval=${iv}&limit=200`)
       .then((r) => r.json())
       .then((data) => {
@@ -80,6 +81,8 @@ export default function App() {
             tickers={tickers}
             activeSymbol={symbol}
             onSelect={setSymbol}
+            watchlist={settings.watchlist}
+            onWatchlistChange={(list) => setSetting('watchlist', list)}
           />
         </div>
 
